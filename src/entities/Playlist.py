@@ -14,10 +14,15 @@ class Playlist(Base):
     name: Mapped[str]
     group_id: Mapped[int] = mapped_column(ForeignKey("playlist_groups.id"))
 
+    group: Mapped["PlaylistGroup"] = relationship(back_populates="playlists")
+
 
 class PlaylistGroup(Base):
     __tablename__ = "playlist_groups"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    key: Mapped[str]
     name: Mapped[str]
-    sync_date: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    sync_date: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+
+    playlists: Mapped[List[Playlist]] = relationship(back_populates="group")

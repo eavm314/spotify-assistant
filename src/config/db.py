@@ -4,10 +4,9 @@ from sqlalchemy.orm import Session
 from src.entities import Base
 
 db_url = os.environ.get('DB_URL')
-engine = create_engine(db_url, echo=True)
+engine = create_engine(db_url, echo=False)
 
 Base.metadata.create_all(engine)
-print(Base.metadata.tables)
 
 def example_query():
     with engine.connect() as conn:
@@ -20,7 +19,7 @@ def example_query():
         for row in result:
             print(f"x: {row.x}  y: {row.y}")
 
-def execute_query(query):
+def execute_raw_query(query):
     with Session(engine) as session:
         result = session.execute(text(query))
         session.commit()

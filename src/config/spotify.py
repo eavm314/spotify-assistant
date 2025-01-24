@@ -8,7 +8,7 @@ spotify_client_secret=os.environ.get('SPOTIFY_CLIENT_SECRET')
 
 spotify_redirect_uri='http://localhost:9090'
 
-scope = ["user-library-read"]
+scope = ['user-library-read', 'playlist-modify-public', 'playlist-modify-private']
 
 spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
     scope=scope, 
@@ -16,3 +16,5 @@ spotify = spotipy.Spotify(auth_manager=SpotifyOAuth(
     client_secret=spotify_client_secret, 
     redirect_uri=spotify_redirect_uri, 
 ))
+
+current_user = spotify.current_user()
