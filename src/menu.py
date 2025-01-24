@@ -9,3 +9,8 @@ def exit_menu():
 
 def sync_playlists_by_group_menu():
     sync_playlists_by_group()
+
+
+def delete_playlists_by_group_menu():
+    group_key = input("Enter the group key: ").strip()
+    delete_playlists_by_group(group_key)

@@ -3,7 +3,7 @@ import pytz
 
 from src.config import spotify, current_user
 from src.entities import Playlist
-from .queries import get_groups, update_group, get_playlist_by_key, create_playlist
+from .queries import *
 from .manager import get_playlists_to_add
 
 
@@ -84,3 +84,14 @@ def get_or_create_playlist(group, playlist_dto):
     create_playlist(new_playlist)
     print(f"Playlist '{new_playlist.name}' created")
     return new_playlist
+
+
+def delete_playlists_by_group(group_key):
+    print("Deleting playlists...")
+    playlists = get_playlists_by_group(group_key)
+    for playlist in playlists:
+        spotify.current_user_unfollow_playlist(playlist.spotify_id)
+        print(f"Playlist '{playlist.name}' deleted")
+
+    if len(playlists) > 0:
+        delete_playlists(playlists[0].group_id)
