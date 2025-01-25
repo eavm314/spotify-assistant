@@ -3,8 +3,8 @@ import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
 
-spotify_client_id=os.environ.get('SPOTIFY_CLIENT_ID')
-spotify_client_secret=os.environ.get('SPOTIFY_CLIENT_SECRET')
+spotify_client_id=os.getenv('SPOTIFY_CLIENT_ID')
+spotify_client_secret=os.getenv('SPOTIFY_CLIENT_SECRET')
 
 spotify_redirect_uri='http://localhost:9090'
 

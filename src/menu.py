@@ -14,3 +14,6 @@ def sync_playlists_by_group_menu():
 def delete_playlists_by_group_menu():
     group_key = input("Enter the group key: ").strip()
     delete_playlists_by_group(group_key)
+
+def selenium_menu():
+    create_group_playlist_folders()

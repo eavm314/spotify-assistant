@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 from src.entities import Base
 
-db_url = os.environ.get('DB_URL')
+db_url = os.getenv('DB_URL')
 engine = create_engine(db_url, echo=False)
 
 Base.metadata.create_all(engine)
