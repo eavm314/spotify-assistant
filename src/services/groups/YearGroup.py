@@ -7,5 +7,6 @@ class YearGroup(BaseGroup):
             year = int(track['album']['release_date'])
         else:
             year = datetime.fromisoformat(track['album']['release_date']).year
-        # if year < 2010:
+        if year < 2010:
+            return [Playlist(key='olds', name='before 2010s')]
         return [Playlist(key=str(year), name=str(year))]
