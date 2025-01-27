@@ -12,7 +12,16 @@ def get_groups():
         return groups
 
 
-def update_group(group):
+def update_playlist(playlist: Playlist):
+    query = update(Playlist) \
+            .where(Playlist.id == playlist.id) \
+            .values(in_folder=True)
+    with Session(engine) as session:
+        session.execute(query)
+        session.commit()
+
+
+def update_group(group: PlaylistGroup):
     query = update(PlaylistGroup) \
             .where(PlaylistGroup.key == group.key) \
             .values(sync_date=group.sync_date)
@@ -40,10 +49,12 @@ def create_playlist(playlist):
         session.commit()
 
 
-def get_playlists_by_group(group_key):
+def get_playlists_by_group(group_key, no_folder=False):
     query_select = select(Playlist).join(PlaylistGroup) \
                     .where(PlaylistGroup.key == group_key) \
                     .order_by(Playlist.id.desc())
+    if no_folder:
+        query_select = query_select.where(Playlist.in_folder == False)
     with Session(engine) as session:
         playlists = session.execute(query_select).scalars().all()
         return playlists

@@ -12,6 +12,7 @@ class Playlist(Base):
     spotify_id: Mapped[str]
     key: Mapped[str] = mapped_column(index=True)
     name: Mapped[str]
+    in_folder: Mapped[bool] = mapped_column(default=False)
     group_id: Mapped[int] = mapped_column(ForeignKey("playlist_groups.id"))
 
     group: Mapped["PlaylistGroup"] = relationship(back_populates="playlists")

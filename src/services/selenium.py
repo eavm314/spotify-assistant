@@ -1,11 +1,11 @@
-from selenium.webdriver import Chrome, ChromeService, ActionChains
+from selenium.webdriver import Chrome, ChromeService, ChromeOptions, ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as EC
 
 from src.config import username, password
-from src.services import get_groups, get_playlists_by_group
+from src.services import get_groups, get_playlists_by_group, update_playlist
 from src.entities import Playlist
 
 spotify_url = 'https://open.spotify.com/'
@@ -23,8 +23,10 @@ def sync_group_playlist_folders():
     for group in groups:
         print(f"Syncing folder for group '{group.key}'...")
         create_playlist_folder(driver, group.name)
-        playlists = get_playlists_by_group(group.key)
-
+        playlists = get_playlists_by_group(group.key, no_folder=True)
+        if len(playlists) == 0:
+            print(f"No playlists to add to folder for group '{group.key}'")
+            continue
         for playlist in playlists:
             add_playlist_to_folder(driver, playlist, group.name)
     
@@ -33,12 +35,15 @@ def sync_group_playlist_folders():
 
 def config_driver():
     webdriver_service = ChromeService(executable_path='drivers/chromedriver.exe')
-    driver = Chrome(service=webdriver_service)
+    chrome_options = ChromeOptions()
+    chrome_options.add_argument('--headless')
+    driver = Chrome(service=webdriver_service, options=chrome_options)
     driver.implicitly_wait(10)
     return driver
 
 
 def login(driver: Chrome):
+    print("Log in Spotify...")
     login_button = driver.find_element(By.XPATH, '//button[@data-testid="login-button"]')
     login_button.click()
 
@@ -97,5 +102,7 @@ def add_playlist_to_folder(driver: Chrome, playlist: Playlist, folder_name: str)
 
     folder = driver.find_element(By.XPATH, f'//button/span[text()="{folder_name}"]')
     folder.click()
+
+    update_playlist(playlist)
 
     WebDriverWait(driver, 10).until(EC.staleness_of(playlist_element))
