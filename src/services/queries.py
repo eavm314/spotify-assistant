@@ -41,7 +41,9 @@ def create_playlist(playlist):
 
 
 def get_playlists_by_group(group_key):
-    query_select = select(Playlist).join(PlaylistGroup).where(PlaylistGroup.key == group_key)
+    query_select = select(Playlist).join(PlaylistGroup) \
+                    .where(PlaylistGroup.key == group_key) \
+                    .order_by(Playlist.id.desc())
     with Session(engine) as session:
         playlists = session.execute(query_select).scalars().all()
         return playlists

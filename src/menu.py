@@ -16,4 +16,4 @@ def delete_playlists_by_group_menu():
     delete_playlists_by_group(group_key)
 
 def selenium_menu():
-    create_group_playlist_folders()
+    sync_group_playlist_folders()
