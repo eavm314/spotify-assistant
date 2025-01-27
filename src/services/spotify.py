@@ -45,7 +45,8 @@ def sync_playlists_by_group():
                 if playlist not in to_add:
                     to_add[playlist] = []
                 to_add[playlist].append(track['uri'])
-        for playlist, track_uris in to_add.items():
+        sorted_items = sorted(to_add.items(), key=lambda x: len(x[1]), reverse=True)
+        for playlist, track_uris in sorted_items:
             add_to_playlist(group, playlist, track_uris)
 
         group.sync_date = datetime.now(pytz.utc)

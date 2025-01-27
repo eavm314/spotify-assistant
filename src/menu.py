@@ -7,6 +7,11 @@ def exit_menu():
     exit()
 
 
+def sync_all_menu():
+    sync_playlists_by_group()
+    sync_group_playlist_folders()
+    
+
 def sync_playlists_by_group_menu():
     sync_playlists_by_group()
 
