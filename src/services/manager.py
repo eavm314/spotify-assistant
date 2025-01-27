@@ -1,7 +1,8 @@
-from .groups import YearGroup
+from .groups import YearGroup, ArtistGroup
 
 groups_strategies = {
     'year': YearGroup(),
+    'artist': ArtistGroup(),
 }
 
 def get_playlists_to_add(track, group_key):
