@@ -105,4 +105,4 @@ def add_playlist_to_folder(driver: Chrome, playlist: Playlist, folder_name: str)
 
     update_playlist(playlist)
 
-    WebDriverWait(driver, 10).until(EC.staleness_of(playlist_element))
+    WebDriverWait(driver, 20).until(EC.staleness_of(playlist_element))
