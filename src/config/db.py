@@ -1,7 +1,10 @@
+from dotenv import load_dotenv
 import os
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 from src.entities import Base
+
+load_dotenv()
 
 db_url = os.getenv('DB_URL')
 engine = create_engine(db_url, echo=False)

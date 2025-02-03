@@ -2,3 +2,4 @@ spotipy
 SQLAlchemy
 pytz
 selenium
+python-dotenv
