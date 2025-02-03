@@ -56,8 +56,11 @@ def login(driver: Chrome):
     login_button = driver.find_element(By.ID, 'login-button')
     login_button.click()
 
-    cookies_close = driver.find_element(By.ID, 'onetrust-close-btn-container')
-    cookies_close.click()
+    try:
+        cookies_close = driver.find_element(By.ID, 'onetrust-close-btn-container')
+        cookies_close.click()
+    except:
+        print('No cookies dialog, proceeding...')
 
 
 def create_playlist_folder(driver: Chrome, folder_name: str):
