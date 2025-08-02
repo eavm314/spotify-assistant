@@ -5,7 +5,7 @@ options = {
     '1': sync_all_menu,
     '2': sync_playlists_by_group_menu,
     '3': delete_playlists_by_group_menu,
-    '4': selenium_menu,
+    # '4': selenium_menu,
     '9': exit_menu
 }
 
@@ -16,7 +16,7 @@ def menu():
         print("1. Sync All")
         print("2. Sync playlists by group")
         print("3. Delete playlists by group")
-        print("4. Selenium folder creation")
+        # print("4. Selenium folder creation")
         print("9. Exit")
         print("----------------------------------")
 

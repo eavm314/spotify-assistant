@@ -9,7 +9,7 @@ def exit_menu():
 
 def sync_all_menu():
     sync_playlists_by_group()
-    sync_group_playlist_folders()
+    # sync_group_playlist_folders()
     
 
 def sync_playlists_by_group_menu():
@@ -20,5 +20,5 @@ def delete_playlists_by_group_menu():
     group_key = input("Enter the group key: ").strip()
     delete_playlists_by_group(group_key)
 
-def selenium_menu():
-    sync_group_playlist_folders()
+# def selenium_menu():
+#     sync_group_playlist_folders()

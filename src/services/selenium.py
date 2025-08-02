@@ -1,3 +1,4 @@
+# Deprecated: This module is deprecated and will be removed in a future version.
 from selenium.webdriver import Chrome, ChromeService, ChromeOptions, ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
