@@ -1,2 +1,3 @@
 from .Base import Base
 from .Playlist import Playlist, PlaylistGroup
+from .Artist import Artist

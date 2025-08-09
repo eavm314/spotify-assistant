@@ -8,12 +8,23 @@ def exit_menu():
 
 
 def sync_all_menu():
-    sync_playlists_by_group()
-    # sync_group_playlist_folders()
+    sync_all_new_content()
     
 
 def sync_playlists_by_group_menu():
     sync_playlists_by_group()
+
+
+def sync_new_followed_artists_menu():
+    sync_new_followed_artists()
+
+
+def sync_new_saved_tracks_menu():
+    sync_new_saved_tracks_to_playlists()
+
+
+def sync_playlist_deletions_menu():
+    sync_playlist_deletions()
 
 
 def delete_playlists_by_group_menu():
