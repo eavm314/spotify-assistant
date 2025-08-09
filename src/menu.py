@@ -1,4 +1,3 @@
-from src.config import execute_raw_query, spotify
 from src.services import *
 
 
@@ -8,11 +7,16 @@ def exit_menu():
 
 
 def sync_all_menu():
-    sync_all_new_content()
+    """Main sync function that handles both new followed artists and new saved tracks"""
+    print("Starting full sync of new content...")
     
-
-def sync_playlists_by_group_menu():
-    sync_playlists_by_group()
+    sync_new_followed_artists()
+    
+    print("\n" + "="*50 + "\n")
+    
+    sync_new_saved_tracks_to_playlists()
+    
+    print("Full sync completed!")
 
 
 def sync_new_followed_artists_menu():
@@ -23,13 +27,6 @@ def sync_new_saved_tracks_menu():
     sync_new_saved_tracks_to_playlists()
 
 
-def sync_playlist_deletions_menu():
-    sync_playlist_deletions()
-
-
 def delete_playlists_by_group_menu():
     group_key = input("Enter the group key: ").strip()
     delete_playlists_by_group(group_key)
-
-# def selenium_menu():
-#     sync_group_playlist_folders()

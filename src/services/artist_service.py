@@ -78,24 +78,3 @@ def update_artist_sync_date(artist_id):
     with Session(engine) as session:
         session.execute(query)
         session.commit()
-
-
-def get_followed_artist_ids():
-    """Get list of followed artist Spotify IDs"""
-    query = select(Artist.spotify_id).where(Artist.is_followed == True)
-    with Session(engine) as session:
-        result = session.execute(query).scalars().all()
-        return set(result)
-
-
-def mark_artists_as_unfollowed(current_followed_ids):
-    """Mark artists as unfollowed if they're no longer in the current followed list"""
-    query = update(Artist).where(
-        Artist.is_followed == True,
-        ~Artist.spotify_id.in_(current_followed_ids)
-    ).values(is_followed=False)
-    
-    with Session(engine) as session:
-        result = session.execute(query)
-        session.commit()
-        return result.rowcount

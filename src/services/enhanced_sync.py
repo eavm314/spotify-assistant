@@ -1,108 +1,47 @@
 from datetime import datetime
 import pytz
-from typing import Set, List, Dict
 
 from src.config import spotify, current_user
 from src.entities import Playlist
 from .queries import *
+from .spotify import *
 from .artist_service import *
 from .manager import get_playlists_to_add
 
 
-def fetch_and_sync_followed_artists():
-    """Fetch all followed artists from Spotify API and update local database"""
-    print('Fetching followed artists...')
-    followed_artists = []
-    current_followed_ids = set()
-    
-    # Get followed artists from Spotify
-    results = spotify.current_user_followed_artists(limit=50)
-    while results:
-        for artist in results['artists']['items']:
-            followed_artists.append(artist)
-            current_followed_ids.add(artist['id'])
-            
-            # Update or create artist in database
-            create_or_update_artist(
-                spotify_id=artist['id'],
-                name=artist['name'],
-                is_followed=True,
-                first_followed_at=datetime.now(pytz.utc)
-            )
-        
-        if results['artists']['next']:
-            results = spotify.next(results['artists'])
-        else:
-            break
-    
-    # Mark artists as unfollowed if they're no longer in the followed list
-    unfollowed_count = mark_artists_as_unfollowed(current_followed_ids)
-    if unfollowed_count > 0:
-        print(f"Marked {unfollowed_count} artists as unfollowed")
-    
-    print(f"Found {len(followed_artists)} followed artists")
+def sync_followed_artists():
+    """Update local database with followed artists"""
+    print('Updating followed artists database...')
+    followed_artists = fetch_all_followed_artists()
+
+    for artist in followed_artists:
+
+        # Update or create artist in database
+        create_or_update_artist(
+            spotify_id=artist['id'],
+            name=artist['name'],
+            is_followed=True,
+            first_followed_at=datetime.now(pytz.utc)
+        )
+
     return followed_artists
 
 
-def get_saved_tracks_since(since_date=None):
-    """Get saved tracks from Spotify API, optionally filtering by date"""
-    print('Fetching saved tracks...')
-    tracks = []
-    offset = 0
-    
-    while True:
-        results = spotify.current_user_saved_tracks(limit=50, offset=offset)
-        
-        for item in results['items']:
-            track = item['track']
-            added_at = datetime.fromisoformat(item['added_at'])
-            
-            # If we have a since_date and this track is older, we can stop
-            if since_date and added_at < since_date.replace(tzinfo=pytz.utc):
-                print(f"Found {len(tracks)} new saved tracks")
-                return tracks
-            
-            tracks.append({
-                'track': track,
-                'added_at': added_at
-            })
-        
-        if not results['next']:
-            break
-        offset += 50
-    
-    print(f"Found {len(tracks)} saved tracks")
-    return tracks
+def get_saved_tracks_since(since_date):
+    """Get saved tracks since last sync date"""
+    tracks = fetch_all_saved_tracks()
+    if not since_date:
+        return tracks
+    new_tracks = []
+    for track in tracks:
+        if track['added_at'] < since_date.replace(tzinfo=pytz.utc):
+            print(f"Found {len(new_tracks)} new saved tracks")
+            return new_tracks
 
+        new_tracks.append(track)
 
-def get_current_playlist_tracks(playlist_id):
-    """Get all tracks currently in a playlist"""
-    current_tracks = set()
-    results = spotify.playlist_tracks(playlist_id)
-    
-    while results:
-        for item in results['items']:
-            if item['track'] and item['track']['id']:
-                current_tracks.add(item['track']['id'])
-        
-        if results['next']:
-            results = spotify.next(results)
-        else:
-            break
-    
-    return current_tracks
-
-
-def remove_tracks_from_playlist(playlist_id, track_uris_to_remove):
-    """Remove tracks from playlist in batches"""
-    if not track_uris_to_remove:
-        return
-    
-    # Remove in batches of 100 (Spotify API limit)
-    while track_uris_to_remove:
-        batch = track_uris_to_remove[:100]
-        track_uris_to_remove = track_uris_to_remove[100:]
-        spotify.playlist_remove_all_occurrences_of_items(playlist_id, batch)
+    print(f"Found {len(new_tracks)} saved tracks")
+    return new_tracks
 
 
 def sync_new_followed_artists():
@@ -110,7 +49,7 @@ def sync_new_followed_artists():
     print("Syncing new followed artists...")
     
     # First, fetch and update all followed artists
-    fetch_and_sync_followed_artists()
+    sync_followed_artists()
     
     # Get artists that haven't been synced yet
     new_artists = get_new_followed_artists()
@@ -121,8 +60,9 @@ def sync_new_followed_artists():
     print(f"Found {len(new_artists)} new followed artists")
     
     # Get all saved tracks (no date filter for new artist playlists)
-    all_saved_tracks = get_saved_tracks_since()
+    all_saved_tracks = fetch_all_saved_tracks()
     
+    artist_group = get_group_by_key('artist')
     # For each new artist, create playlist and add their tracks
     for artist in new_artists:
         print(f"Processing artist: {artist.name}")
@@ -138,18 +78,8 @@ def sync_new_followed_artists():
         
         if artist_tracks:
             # Create or get artist playlist
-            playlist_dto = type('PlaylistDTO', (), {
-                'key': f"artist_{artist.spotify_id}",
-                'name': f"{artist.name} - Saved Tracks"
-            })()
-            
-            # Create a dummy group for artist playlists
-            artist_group = type('Group', (), {
-                'id': 0,  # Special ID for artist playlists
-                'key': 'artist_playlists',
-                'name': 'Artist Playlists'
-            })()
-            
+            playlist_dto = Playlist(key=artist.spotify_id, name=artist.name)
+
             add_to_playlist(artist_group, playlist_dto, artist_tracks)
             print(f"Added {len(artist_tracks)} tracks to {artist.name}'s playlist")
         else:
@@ -162,9 +92,6 @@ def sync_new_followed_artists():
 def sync_new_saved_tracks_to_playlists():
     """Add new saved tracks to year and artist playlists, but only for followed artists"""
     print("Syncing new saved tracks to playlists...")
-    
-    # Get followed artist IDs for filtering
-    followed_artist_ids = get_followed_artist_ids()
     
     # Get all groups (year, artist, etc.)
     groups = get_groups()
@@ -181,108 +108,22 @@ def sync_new_saved_tracks_to_playlists():
         if not new_tracks:
             print(f"No new tracks for group '{group.key}'")
             continue
-        
-        tracks_to_process = []
-        
-        # Filter tracks to only include those by followed artists (for artist groups)
-        # or all tracks (for other groups like year)
-        for track_item in new_tracks:
-            track = track_item['track']
-            
-            if group.key == 'artist':
-                # For artist groups, only include tracks by followed artists
-                track_has_followed_artist = any(
-                    artist['id'] in followed_artist_ids 
-                    for artist in track['artists']
-                )
-                if track_has_followed_artist:
-                    tracks_to_process.append(track)
-            else:
-                # For other groups (like year), include all tracks
-                tracks_to_process.append(track)
-        
-        if not tracks_to_process:
-            print(f"No tracks to process for group '{group.key}' (after filtering)")
-            continue
-        
-        # Group tracks by playlist
-        tracks_by_playlist = {}
-        for track in tracks_to_process:
+
+        to_add = {}
+        for item in new_tracks:
+            track = item['track']
             playlists = get_playlists_to_add(track, group.key)
-            for playlist_dto in playlists:
-                if playlist_dto.key not in tracks_by_playlist:
-                    tracks_by_playlist[playlist_dto.key] = {
-                        'playlist_dto': playlist_dto,
-                        'tracks': []
-                    }
-                tracks_by_playlist[playlist_dto.key]['tracks'].append(track['uri'])
-        
-        # Add tracks to playlists
-        sorted_playlists = sorted(tracks_by_playlist.items(), key=lambda x: len(x[1]['tracks']))
-        for playlist_key, playlist_data in sorted_playlists:
-            add_to_playlist(group, playlist_data['playlist_dto'], playlist_data['tracks'])
-        
-        # Update group sync date
+            for playlist in playlists:
+                if playlist not in to_add:
+                    to_add[playlist] = []
+                to_add[playlist].append(track['uri'])
+        sorted_items = sorted(to_add.items(), key=lambda x: len(x[1]))
+        for playlist, track_uris in sorted_items:
+            add_to_playlist(group, playlist, track_uris)
+
         group.sync_date = datetime.now(pytz.utc)
         update_group(group)
-        print(f"Group '{group.key}' synced with {len(tracks_to_process)} tracks")
-
-
-def sync_playlist_deletions():
-    """Remove tracks from playlists that are no longer in saved tracks"""
-    print("Syncing playlist deletions...")
-    
-    # Get all current saved track IDs
-    current_saved_tracks = set()
-    saved_tracks = get_saved_tracks_since()
-    for track_item in saved_tracks:
-        current_saved_tracks.add(track_item['track']['id'])
-    
-    # Get all playlists managed by the system
-    all_playlists = []
-    groups = get_groups()
-    for group in groups:
-        playlists = get_playlists_by_group(group.key)
-        all_playlists.extend(playlists)
-    
-    # Check each playlist and remove tracks that are no longer saved
-    for playlist in all_playlists:
-        print(f"Checking playlist: {playlist.name}")
-        
-        # Get current tracks in the playlist
-        current_playlist_tracks = get_current_playlist_tracks(playlist.spotify_id)
-        
-        # Find tracks to remove (tracks in playlist but not in saved tracks)
-        tracks_to_remove = []
-        for track_id in current_playlist_tracks:
-            if track_id not in current_saved_tracks:
-                tracks_to_remove.append(f"spotify:track:{track_id}")
-        
-        if tracks_to_remove:
-            print(f"Removing {len(tracks_to_remove)} tracks from playlist: {playlist.name}")
-            remove_tracks_from_playlist(playlist.spotify_id, tracks_to_remove)
-        else:
-            print(f"No tracks to remove from playlist: {playlist.name}")
-
-
-def sync_all_new_content():
-    """Main sync function that handles both new followed artists and new saved tracks"""
-    print("Starting full sync of new content...")
-    
-    # First sync new followed artists
-    sync_new_followed_artists()
-    
-    print("\n" + "="*50 + "\n")
-    
-    # Then sync new saved tracks to existing playlists
-    sync_new_saved_tracks_to_playlists()
-    
-    print("\n" + "="*50 + "\n")
-    
-    # Finally, remove tracks that are no longer saved
-    sync_playlist_deletions()
-    
-    print("Full sync completed!")
+        print(f"Group '{group.key}' synced")
 
 
 def add_to_playlist(group, playlist_dto, track_uris):
@@ -308,34 +149,6 @@ def get_or_create_playlist(group, playlist_dto):
     if playlist:
         return playlist
 
-    # Handle special case for artist playlists (group.id = 0)
-    if group.id == 0:
-        # Create artist playlist group if it doesn't exist
-        from sqlalchemy import select, insert
-        from sqlalchemy.orm import Session
-        from src.entities import PlaylistGroup
-        from src.config import engine
-        
-        with Session(engine) as session:
-            # Check if artist playlist group exists
-            query = select(PlaylistGroup).where(PlaylistGroup.key == 'artist_playlists')
-            existing_group = session.execute(query).scalar_one_or_none()
-            
-            if not existing_group:
-                # Create artist playlist group
-                insert_query = insert(PlaylistGroup).values(
-                    key='artist_playlists',
-                    name='Artist Playlists',
-                    sync_date=datetime.now(pytz.utc)
-                )
-                session.execute(insert_query)
-                session.commit()
-                
-                # Get the created group
-                existing_group = session.execute(query).scalar_one()
-            
-            group.id = existing_group.id
-
     new_playlist = spotify.user_playlist_create(
         current_user['id'], 
         playlist_dto.name,
@@ -352,3 +165,14 @@ def get_or_create_playlist(group, playlist_dto):
     create_playlist(new_playlist_entity)
     print(f"Playlist '{new_playlist_entity.name}' created")
     return new_playlist_entity
+
+
+def delete_playlists_by_group(group_key):
+    print("Deleting playlists...")
+    playlists = get_playlists_by_group(group_key)
+    for playlist in playlists:
+        spotify.current_user_unfollow_playlist(playlist.spotify_id)
+        print(f"Playlist '{playlist.name}' deleted")
+
+    if len(playlists) > 0:
+        delete_playlists(playlists[0].group_id)

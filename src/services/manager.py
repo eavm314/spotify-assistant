@@ -1,9 +1,8 @@
-from .groups import YearGroup, ArtistGroup, FollowedArtistGroup
+from .groups import BaseGroup, YearGroup, FollowedArtistGroup
 
-groups_strategies = {
+groups_strategies: dict[str, BaseGroup] = {
     'year': YearGroup(),
-    'artist': FollowedArtistGroup(),  # Use filtered version for artist groups
-    'artist_all': ArtistGroup(),     # Keep original for backward compatibility
+    'artist': FollowedArtistGroup(),
 }
 
 def get_playlists_to_add(track, group_key):

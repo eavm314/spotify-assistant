@@ -10,6 +10,12 @@ def get_groups():
     with Session(engine) as session:
         groups = session.execute(query).scalars().all()
         return groups
+    
+def get_group_by_key(key):
+    query = select(PlaylistGroup).where(PlaylistGroup.key == key)
+    with Session(engine) as session:
+        group = session.execute(query).scalar_one_or_none()
+        return group
 
 
 def update_playlist(playlist: Playlist):
