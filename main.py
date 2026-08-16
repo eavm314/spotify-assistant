@@ -1,5 +1,7 @@
-from src.config import current_user
+from src.config import init_spotify
 from src.menu import *
+from spotipy.exceptions import SpotifyException
+from spotipy.oauth2 import SpotifyOauthError
 
 options = {
     '1': sync_all_menu,
@@ -28,5 +30,19 @@ def menu():
     
 
 if __name__ == '__main__':
+    try:
+        current_user = init_spotify()
+    except RuntimeError as e:
+        print(f"Configuration error: {e}")
+        exit(1)
+    except SpotifyOauthError as e:
+        print(f"Spotify authentication failed: {e}")
+        print("Check SPOTIFY_CLIENT_ID / SPOTIFY_CLIENT_SECRET in .env, and make sure "
+              "the redirect URI http://127.0.0.1:9090 is registered in your Spotify app settings.")
+        exit(1)
+    except SpotifyException as e:
+        print(f"Error initializing Spotify client: {e.msg}")
+        exit(1)
+
     print(f"Welcome, {current_user['display_name']}!")
     menu()
