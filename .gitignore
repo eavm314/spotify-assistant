@@ -175,3 +175,5 @@ pyrightconfig.json
 
 # Drivers for selenium
 drivers/
+
+.DS_Store
